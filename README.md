@@ -24,7 +24,7 @@ The first run sets everything up and takes a few minutes.
 Or from a terminal on any OS:
 
 ```console
-git clone https://github.com/<Semedo2002>/paramfabric.git
+git clone https://github.com/<Semedo2002>/Paramfabric.git
 cd paramfabric
 python -m venv .venv
 .venv\Scripts\activate            # Linux/macOS: source .venv/bin/activate
