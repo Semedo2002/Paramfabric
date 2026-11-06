@@ -1,0 +1,126 @@
+# Paramfabric multi-tenant stack: API, Redis-backed workers, PostgreSQL, and S3 artifacts.
+#
+#   docker compose up -d                      # API + workers + Redis + Postgres (artifacts in S3)
+#   docker compose --profile minio up -d      # ...plus a local MinIO bucket for development
+#
+# Required: PARAMFABRIC_DATABASE_URL, PARAMFABRIC_JWT_SECRET, PARAMFABRIC_AUDIT_KEY, POSTGRES_PASSWORD,
+# PARAMFABRIC_LICENSE_PUBLIC_KEY_FILE; S3 settings (PARAMFABRIC_S3_*) for artifact storage.
+x-paramfabric-env: &paramfabric-env
+  PARAMFABRIC_AUTH_REQUIRED: "true"
+  PARAMFABRIC_DATABASE_URL: ${PARAMFABRIC_DATABASE_URL:?Set the PostgreSQL SQLAlchemy URL}
+  PARAMFABRIC_JWT_SECRET: ${PARAMFABRIC_JWT_SECRET:?Set a random 32-byte minimum JWT secret}
+  PARAMFABRIC_AUDIT_KEY: ${PARAMFABRIC_AUDIT_KEY:?Set an independent random 32-byte minimum audit key}
+  PARAMFABRIC_SIGNING_KEY: ${PARAMFABRIC_SIGNING_KEY:-}  # Ed25519 PKCS#8 PEM shared by all replicas (optional)
+  PARAMFABRIC_SIGNING_KEY_PASSPHRASE: ${PARAMFABRIC_SIGNING_KEY_PASSPHRASE:-}
+  PARAMFABRIC_CREATE_SCHEMA: "false"
+  PARAMFABRIC_CONFIG_PATH: /app/params.yaml
+  PARAMFABRIC_AUDIT_PATH: /app/var/audit-ledger.jsonl
+  PARAMFABRIC_DATA_DIR: /app/var/workbench
+  PARAMFABRIC_REDIS_URL: redis://redis:6379/0
+  PARAMFABRIC_S3_ENDPOINT: ${PARAMFABRIC_S3_ENDPOINT:-}
+  PARAMFABRIC_S3_BUCKET: ${PARAMFABRIC_S3_BUCKET:-paramfabric-artifacts}
+  PARAMFABRIC_S3_REGION: ${PARAMFABRIC_S3_REGION:-us-east-1}
+  PARAMFABRIC_S3_ACCESS_KEY: ${PARAMFABRIC_S3_ACCESS_KEY:-}
+  PARAMFABRIC_S3_SECRET_KEY: ${PARAMFABRIC_S3_SECRET_KEY:-}
+  PARAMFABRIC_OIDC_ISSUER: ${PARAMFABRIC_OIDC_ISSUER:-}
+  PARAMFABRIC_OIDC_AUDIENCE: ${PARAMFABRIC_OIDC_AUDIENCE:-}
+  PARAMFABRIC_OIDC_ROLES_CLAIM: ${PARAMFABRIC_OIDC_ROLES_CLAIM:-groups}
+  PARAMFABRIC_OIDC_ROLE_MAP: ${PARAMFABRIC_OIDC_ROLE_MAP:-{}}
+  PARAMFABRIC_OIDC_ORG_CLAIM: ${PARAMFABRIC_OIDC_ORG_CLAIM:-}
+  PARAMFABRIC_AUTO_PROVISION_ORGS: ${PARAMFABRIC_AUTO_PROVISION_ORGS:-false}
+  PARAMFABRIC_WEBHOOK_URL: ${PARAMFABRIC_WEBHOOK_URL:-}
+  PARAMFABRIC_WEBHOOK_SECRET: ${PARAMFABRIC_WEBHOOK_SECRET:-}
+  PARAMFABRIC_LICENSE_REQUIRED: ${PARAMFABRIC_LICENSE_REQUIRED:-true}
+  PARAMFABRIC_LICENSE: ${PARAMFABRIC_LICENSE:-}
+  PARAMFABRIC_LICENSE_PUBLIC_KEY: /run/secrets/license_public_key
+
+x-paramfabric-service: &paramfabric-service
+  build: .
+  restart: unless-stopped
+  environment: *paramfabric-env
+  volumes:
+    - enterprise-data:/app/var
+    - ${PARAMFABRIC_CONFIG:-./examples/params.yaml}:/app/params.yaml:ro
+  secrets:
+    - license_public_key
+  security_opt:
+    - no-new-privileges:true
+  read_only: true
+  tmpfs:
+    - /tmp
+
+services:
+  api:
+    <<: *paramfabric-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${PARAMFABRIC_BIND_ADDRESS:-127.0.0.1}:8000:8000"
+
+  worker:
+    <<: *paramfabric-service
+    command: ["paramfabric", "worker"]
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: ${PARAMFABRIC_WORKERS:-2}
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-paramfabric}
+      POSTGRES_USER: ${POSTGRES_USER:-paramfabric}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  minio:
+    profiles: ["minio"]
+    image: ${MINIO_IMAGE:-minio/minio:latest}
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${PARAMFABRIC_S3_ACCESS_KEY:-paramfabric}
+      MINIO_ROOT_PASSWORD: ${PARAMFABRIC_S3_SECRET_KEY:-}  # MinIO refuses to start without 8+ characters
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  enterprise-data:
+  postgres-data:
+  redis-data:
+  minio-data:
+
+secrets:
+  license_public_key:
+    file: ${PARAMFABRIC_LICENSE_PUBLIC_KEY_FILE:?Set PARAMFABRIC_LICENSE_PUBLIC_KEY_FILE}

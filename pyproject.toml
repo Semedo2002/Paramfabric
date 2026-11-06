@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paramfabric-studio"
+version = "0.6.0"
+description = "Parametric CAD/CAE workbench: governed parameter fabric, exact B-Rep regeneration, unstructured meshing, native 3D FEA/CFD, and code sync."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Paramfabric contributors" }]
+dependencies = [
+  "alembic>=1.13",
+  "cryptography>=42.0",
+  "fastapi>=0.110",
+  "networkx>=3.2",
+  "pint>=0.23",
+  "PyJWT[crypto]>=2.8",
+  "pydantic>=2.6",
+  "psycopg[binary]>=3.1",
+  "pyyaml>=6.0",
+  "rich>=13.7",
+  "SQLAlchemy>=2.0",
+  "typer>=0.12",
+  "uvicorn[standard]>=0.27",
+  # CAE core: exact B-Rep (OpenCASCADE via gmsh), meshing, structural solver
+  "numpy>=1.24.0",
+  "scipy>=1.10.0",
+  "gmsh>=4.11.0",
+  "pywebview>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["httpx2>=0.1", "pytest>=8.0"]
+desktop = ["pyinstaller>=6.0"]
+distributed = ["redis>=4.5.0"]
+s3 = ["boto3>=1.28"]
+all = ["paramfabric-studio[dev,desktop,distributed,s3]"]
+
+[project.scripts]
+paramfabric = "paramfabric.cli:app"
+paramfabric-studio = "paramfabric.desktop:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["paramfabric"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"paramfabric/studio/static/index.html" = "paramfabric/studio/static/index.html"
+"paramfabric/studio/static/style.css" = "paramfabric/studio/static/style.css"
+"paramfabric/studio/static/app.js" = "paramfabric/studio/static/app.js"
+"paramfabric/studio/static/viewport.js" = "paramfabric/studio/static/viewport.js"
+"paramfabric/studio/static/guide.js" = "paramfabric/studio/static/guide.js"
+"paramfabric/studio/static/knowledge.json" = "paramfabric/studio/static/knowledge.json"
+"paramfabric/studio/static/d3.min.js" = "paramfabric/studio/static/d3.min.js"
+"paramfabric/studio/static/three.module.min.js" = "paramfabric/studio/static/three.module.min.js"
+"paramfabric/studio/static/three.core.min.js" = "paramfabric/studio/static/three.core.min.js"
+"paramfabric/studio/static/D3-LICENSE.txt" = "paramfabric/studio/static/D3-LICENSE.txt"
+"paramfabric/studio/static/THREE-LICENSE.txt" = "paramfabric/studio/static/THREE-LICENSE.txt"
+"paramfabric/migrations/script.py.mako" = "paramfabric/migrations/script.py.mako"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

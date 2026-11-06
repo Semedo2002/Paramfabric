@@ -1,0 +1,98 @@
+# Paramfabric parameter quality gate.
+#
+# Runs `paramfabric ci-check` on every pull request: unit consistency (Pint),
+# circular dependencies, unapproved parameter edits (signed paramfabric.lock),
+# and source-code drift. Posts the blast-radius summary as one PR comment
+# (updated in place on every push) and fails the check on blocking errors.
+#
+# Setup
+#   1. Repository variable PARAMFABRIC_APPROVAL_PUBLIC_KEY: the organization's Ed25519 public key(s), PEM
+#      (curl https://<server>/api/public/organizations/<org>/signing-keys?format=pem). It is public, so it
+#      is a variable, not a secret, and approvals verify on pull requests from forks too.
+#   2. Make "Paramfabric gate / gate" a required status check on the default branch.
+#   3. Optional repository variables: PARAMFABRIC_FABRIC (default params.yaml),
+#      PARAMFABRIC_APPROVALS (required | warn | off), PARAMFABRIC_DRIFT (error | warn | off),
+#      PARAMFABRIC_PIP_SPEC (default ".": install from this repository; use e.g.
+#      "paramfabric-studio==0.6.0" with your package index for engineering repositories).
+name: Paramfabric gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: paramfabric-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out (full history for the base revision)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Paramfabric
+        env:
+          PIP_SPEC: ${{ vars.PARAMFABRIC_PIP_SPEC || '.' }}
+        run: python -m pip install "$PIP_SPEC"
+
+      - name: Run the parameter gate
+        id: gate
+        env:
+          PARAMFABRIC_APPROVAL_PUBLIC_KEY: ${{ vars.PARAMFABRIC_APPROVAL_PUBLIC_KEY }}
+          BASE_REF: origin/${{ github.base_ref }}
+          FABRIC: ${{ vars.PARAMFABRIC_FABRIC || 'params.yaml' }}
+          APPROVALS: ${{ vars.PARAMFABRIC_APPROVALS || 'required' }}
+          DRIFT: ${{ vars.PARAMFABRIC_DRIFT || 'error' }}
+        run: |
+          set +e
+          paramfabric ci-check --base "$BASE_REF" --head WORKTREE --fabric "$FABRIC" \
+            --approvals "$APPROVALS" --drift "$DRIFT" \
+            --summary paramfabric-summary.md --json paramfabric-result.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Post or update the pull-request comment
+        if: always() && hashFiles('paramfabric-summary.md') != '' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("paramfabric-summary.md", "utf8");
+            const marker = "<!-- paramfabric-ci-check -->";
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find(comment => comment.body && comment.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Upload the machine-readable result
+        if: always() && hashFiles('paramfabric-result.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: paramfabric-gate-result
+          path: |
+            paramfabric-result.json
+            paramfabric-summary.md
+
+      - name: Enforce the gate
+        if: steps.gate.outputs.exit_code != '0'
+        run: |
+          echo "::error title=Paramfabric gate::Blocking parameter errors. See the pull-request comment or job summary."
+          exit 1

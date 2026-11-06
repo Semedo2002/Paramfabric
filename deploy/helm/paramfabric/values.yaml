@@ -1,0 +1,99 @@
+replicaCount: 1
+
+image:
+  repository: paramfabric-enterprise
+  tag: "0.6.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+security:
+  existingSecret: paramfabric-enterprise-secrets
+  jwtSecretKey: jwt-secret
+  auditKeyKey: audit-key
+  databaseUrlKey: database-url
+  licenseTokenKey: license-token
+  licensePublicKeyKey: license-public-key
+  # Optional keys in the same secret (missing keys are simply not set):
+  # PARAMFABRIC_SIGNING_KEY: Ed25519 private key (PKCS#8 PEM, `paramfabric keys generate`) that signs
+  # compliance reports and paramfabric.lock approvals. Set it so every replica signs with one key; without it
+  # each replica creates its own (all are published, so verification still works). Public keys are served at
+  # /api/public/organizations/<org>/signing-keys.
+  signingKeyKey: signing-key
+  signingKeyPassphraseKey: signing-key-passphrase
+  webhookSecretKey: webhook-secret   # PARAMFABRIC_WEBHOOK_SECRET: HMAC for X-Paramfabric-Signature
+
+config:
+  fabricPath: /etc/paramfabric/params.yaml
+  auditPath: /var/lib/paramfabric/audit-ledger.jsonl
+  dataDir: /var/lib/paramfabric/workbench
+  licenseRequired: true
+  fabricYaml: |
+    version: 1
+    parameters: []
+
+# Multi-tenancy: organizations come from the token's organization claim.
+tenancy:
+  autoProvisionOrganizations: false   # true: first login from a new organization creates it
+
+# Enterprise SSO (Okta, Microsoft Entra ID, Google Workspace, Auth0, Keycloak).
+oidc:
+  enabled: false
+  issuer: ""                 # e.g. https://acme.okta.com/oauth2/default
+  audience: ""               # client id or API identifier
+  rolesClaim: groups         # Entra app roles: "roles"; Keycloak: "realm_access.roles"
+  roleMap: "{}"              # JSON: {"idp-group": "engineer", "quality-leads": "approver"}
+  defaultRole: viewer
+  orgClaim: ""               # Entra: "tid"; Google Workspace: "hd"; Okta/Auth0 orgs: "org_id"
+  orgMap: "{}"               # JSON: {"<tenant guid>": "acme"}
+  organization: default      # used when orgClaim is empty
+
+# Remote execution: API pods enqueue, worker pods run meshing/solves.
+redis:
+  enabled: false
+  urlKey: redis-url          # secret key holding redis://host:6379/0
+
+worker:
+  enabled: false
+  replicas: 2
+  image: {}                  # override, e.g. an image with OpenFOAM: {repository: ..., tag: ...}
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+    limits:
+      cpu: "8"
+      memory: 16Gi
+
+# Artifact storage (VTK results, meshes, OpenFOAM case archives).
+objectStorage:
+  s3:
+    enabled: false
+    endpoint: https://s3.eu-central-1.amazonaws.com
+    bucket: paramfabric-artifacts
+    region: eu-central-1
+    prefix: artifacts
+    addressing: ""           # path | virtual (auto when empty)
+    client: auto             # auto | boto3 | minio | native
+    accessKeyKey: s3-access-key
+    secretKeyKey: s3-secret-key
+
+webhooks:
+  url: ""                    # comma-separated endpoints; empty disables webhooks
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+  # Workers and API pods share tenant workspaces: use ReadWriteMany when worker.enabled.
+  accessModes: ["ReadWriteOnce"]

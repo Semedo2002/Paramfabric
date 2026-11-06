@@ -1,0 +1,25 @@
+version: 1
+parameters:
+  - name: root_chord
+    value: 2.0
+    unit: m
+    type: float
+    description: Wing root chord.
+    rationale: Example source-of-truth geometry.
+    tags: [geometry, aerodynamics]
+    bindings:
+      cpp_header: generated/params.hpp
+      py_module: generated/params.py
+      markdown: docs/parameters.md
+      solidworks: generated/update_solidworks.bas
+      nx: generated/update_nx.py
+      ansys: generated/params.inp
+      openfoam: generated/paramfabricDict
+      comsol: generated/params.java
+  - name: wing_span
+    value: 5.0 * root_chord
+    unit: m
+    type: float
+    description: Full wing span.
+    rationale: Example aspect ratio of five.
+    tags: [geometry, aerodynamics]

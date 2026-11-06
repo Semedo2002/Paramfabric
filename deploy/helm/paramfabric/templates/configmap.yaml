@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "paramfabric.fullname" . }}-config
+data:
+  PARAMFABRIC_AUTH_REQUIRED: "true"
+  PARAMFABRIC_AUDIT_PATH: {{ .Values.config.auditPath | quote }}
+  PARAMFABRIC_LICENSE_REQUIRED: {{ .Values.config.licenseRequired | quote }}
+  PARAMFABRIC_CONFIG_PATH: {{ .Values.config.fabricPath | quote }}
+  PARAMFABRIC_DATA_DIR: {{ .Values.config.dataDir | quote }}
+  PARAMFABRIC_CREATE_SCHEMA: "false"
+  PARAMFABRIC_AUTO_PROVISION_ORGS: {{ .Values.tenancy.autoProvisionOrganizations | quote }}
+  {{- if .Values.oidc.enabled }}
+  PARAMFABRIC_OIDC_ISSUER: {{ required "oidc.issuer is required" .Values.oidc.issuer | quote }}
+  PARAMFABRIC_OIDC_AUDIENCE: {{ required "oidc.audience is required" .Values.oidc.audience | quote }}
+  PARAMFABRIC_OIDC_ROLES_CLAIM: {{ .Values.oidc.rolesClaim | quote }}
+  PARAMFABRIC_OIDC_ROLE_MAP: {{ .Values.oidc.roleMap | quote }}
+  PARAMFABRIC_OIDC_DEFAULT_ROLE: {{ .Values.oidc.defaultRole | quote }}
+  PARAMFABRIC_OIDC_ORG_CLAIM: {{ .Values.oidc.orgClaim | quote }}
+  PARAMFABRIC_OIDC_ORG_MAP: {{ .Values.oidc.orgMap | quote }}
+  PARAMFABRIC_OIDC_ORGANIZATION: {{ .Values.oidc.organization | quote }}
+  {{- end }}
+  {{- if .Values.objectStorage.s3.enabled }}
+  PARAMFABRIC_S3_ENDPOINT: {{ .Values.objectStorage.s3.endpoint | quote }}
+  PARAMFABRIC_S3_BUCKET: {{ .Values.objectStorage.s3.bucket | quote }}
+  PARAMFABRIC_S3_REGION: {{ .Values.objectStorage.s3.region | quote }}
+  PARAMFABRIC_S3_PREFIX: {{ .Values.objectStorage.s3.prefix | quote }}
+  PARAMFABRIC_S3_CLIENT: {{ .Values.objectStorage.s3.client | quote }}
+  {{- if .Values.objectStorage.s3.addressing }}
+  PARAMFABRIC_S3_ADDRESSING: {{ .Values.objectStorage.s3.addressing | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.webhooks.url }}
+  PARAMFABRIC_WEBHOOK_URL: {{ .Values.webhooks.url | quote }}
+  {{- end }}
