@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0e14">
+  <link rel="icon" href="data:,">
+  <title>Paramfabric Studio</title>
+  <link rel="stylesheet" href="/studio-static/style.css">
+  <script src="/studio-static/d3.min.js" defer></script>
+  <script type="module" src="/studio-static/app.js"></script>
+</head>
+<body>
+  <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-mark" viewBox="0 0 32 32"><path d="M5 8.5 16 3l11 5.5v15L16 29 5 23.5z"/><path d="m5.5 8.8 10.5 5.4 10.5-5.4M16 14.2V28M10.5 6l11 5.5"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 9 5v8l-9 5-9-5V8zM3.5 8.5 12 13l8.5-4.5M12 13v8"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-mesh" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4M4 20h16"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4zM12 9v5m0 3h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-9.5h.01"/></symbol>
+    <symbol id="i-dag" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m7.4 8.1 3.4 7.6m5.8-7.6-3.4 7.6"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 24 24"><path d="m3 17 14-14 4 4L7 21zM7 13l2 2m1-5 2 2m1-5 2 2"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6h4"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-gpu" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 3v3m4-3v3m4-3v3M8 18v3m4-3v3m4-3v3M9 10h6v4H9z"/></symbol>
+    <symbol id="i-extrude" viewBox="0 0 24 24"><path d="M4 16h10v4H4zM9 16V6m-3 3 3-3 3 3M14 16l6-4"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM12 3v18" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-boolean" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></symbol>
+    <symbol id="i-flow" viewBox="0 0 24 24"><path d="M3 8c4 0 4-3 9-3s5 3 9 3M3 16c4 0 4 3 9 3s5-3 9-3M3 12h18"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M4 20V10h10v10zM14 10l6-6m-5 0h5v5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8m0-4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4"/></symbol>
+    <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 4v14m-5-5 5 5 5-5"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 20V6m-5 5 5-5 5 5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
+    <symbol id="i-face" viewBox="0 0 24 24"><path d="M5 7l7-3 7 3v10l-7 3-7-3z"/></symbol>
+    <symbol id="i-param" viewBox="0 0 24 24"><path d="M5 5h3M5 12h3M5 19h3M11 5h8M11 12h8M11 19h8"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4z" stroke-opacity=".5"/><path d="M2 13h20" stroke-dasharray="3 2"/></symbol>
+    <symbol id="i-vectors" viewBox="0 0 24 24"><path d="M4 18 14 8m0 0H9m5 0v5M10 21l8-8m0 0h-4m4 0v4"/></symbol>
+    <symbol id="i-compare" viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/></symbol>
+  </svg>
+
+  <div class="studio">
+    <header class="topbar">
+      <a class="brand" href="/studio" aria-label="Paramfabric Studio home">
+        <span class="brand-mark"><svg><use href="#i-mark"/></svg></span>
+        <span class="brand-copy"><strong>paramfabric</strong><small>STUDIO</small></span>
+      </a>
+      <nav class="stepper" aria-label="Simulation workflow">
+        <button class="step active" data-step="1"><span class="step-num">1</span><span class="step-label"><span class="long">Geometry &amp; Parameters</span><span class="short">Geometry</span></span></button>
+        <svg class="step-sep" aria-hidden="true"><use href="#i-chevron"/></svg>
+        <button class="step" data-step="2"><span class="step-num">2</span><span class="step-label"><span class="long">Physics &amp; Boundary Conditions</span><span class="short">Physics</span></span></button>
+        <svg class="step-sep" aria-hidden="true"><use href="#i-chevron"/></svg>
+        <button class="step" data-step="3"><span class="step-num">3</span><span class="step-label"><span class="long">Mesh &amp; Solver</span><span class="short">Mesh</span></span></button>
+        <svg class="step-sep" aria-hidden="true"><use href="#i-chevron"/></svg>
+        <button class="step" data-step="4"><span class="step-num">4</span><span class="step-label"><span class="long">Results &amp; Post-Processing</span><span class="short">Results</span></span></button>
+      </nav>
+      <div class="top-actions">
+        <div class="skill-toggle" role="radiogroup" aria-label="Skill level" title="Guidance level: help badges, tooltips, and advanced solver controls">
+          <button role="radio" data-skill="beginner" aria-checked="false">Beginner</button>
+          <button role="radio" data-skill="intermediate" aria-checked="true">Intermediate</button>
+          <button role="radio" data-skill="expert" aria-checked="false">Expert</button>
+        </div>
+        <button id="importCad" class="tbtn" title="Import STEP, IGES, or STL (Ctrl+O)"><svg><use href="#i-upload"/></svg><span>Import CAD</span></button>
+        <button id="checkFabric" class="tbtn" title="Validate units and dependencies"><svg><use href="#i-check"/></svg><span>Check Fabric</span></button>
+        <button id="meshGeometry" class="tbtn" title="Generate the volume mesh"><svg><use href="#i-mesh"/></svg><span>Mesh Geometry</span></button>
+        <button id="runSimulation" class="tbtn primary" title="Mesh and solve (Ctrl+Enter)"><svg><use href="#i-play"/></svg><span>Run Simulation</span></button>
+        <div class="menu-wrap">
+          <button id="exportMenuButton" class="tbtn" aria-haspopup="menu" aria-expanded="false"><svg><use href="#i-export"/></svg><span>Export Code/CAD</span><svg class="chev"><use href="#i-chevron"/></svg></button>
+          <div id="exportMenu" class="menu" role="menu" hidden>
+            <button role="menuitem" data-export="build">Build all bound code &amp; docs targets</button>
+            <button role="menuitem" data-export="cpp_header">C++ header (download)</button>
+            <button role="menuitem" data-export="py_module">Python module (download)</button>
+            <button role="menuitem" data-export="rust">Rust module (download)</button>
+            <button role="menuitem" data-export="openscad">OpenSCAD variables (download)</button>
+            <hr>
+            <button role="menuitem" data-export="step">Regenerated B-Rep · STEP AP214</button>
+            <button role="menuitem" data-export="iges">Regenerated B-Rep · IGES</button>
+            <button role="menuitem" data-export="stl">Morphed geometry · STL (mm)</button>
+            <button role="menuitem" data-export="openfoam">OpenFOAM case folder</button>
+            <button role="menuitem" data-export="calculix">CalculiX input deck</button>
+            <button role="menuitem" data-export="solidworks">SolidWorks macro (download)</button>
+            <button role="menuitem" data-export="nx">Siemens NX journal (download)</button>
+            <hr>
+            <button role="menuitem" data-export="compliance-pdf">Compliance audit report · PDF (sealed)</button>
+            <button role="menuitem" data-export="compliance-html">Compliance audit report · HTML (sealed)</button>
+          </div>
+        </div>
+        <div id="enterpriseLogin" class="enterprise-login" hidden><input id="tokenInput" type="password" aria-label="Access token" placeholder="Enterprise access token"><button id="connectEnterprise" class="tbtn">Connect</button></div>
+        <span id="sessionPill" class="session-pill" hidden><svg><use href="#i-user"/></svg><span>Local Admin</span></span>
+      </div>
+    </header>
+
+    <div class="diagbar" role="status" aria-live="polite">
+      <span class="diag" id="diagUnits" data-state="pending"><svg><use href="#i-ruler"/></svg><b>Unit integrity</b><span>Checking…</span></span>
+      <span class="diag" id="diagDag" data-state="pending"><svg><use href="#i-dag"/></svg><b>DAG</b><span>Checking…</span></span>
+      <span class="diag" id="diagMesh" data-state="idle"><svg><use href="#i-mesh"/></svg><b>Mesh quality</b><span>Not meshed</span></span>
+      <span class="diag" id="diagSolver" data-state="idle"><svg><use href="#i-pulse"/></svg><b>Solver</b><span>Idle</span></span>
+      <span class="diag" id="diagSync" data-state="idle"><svg><use href="#i-code"/></svg><b>Code sync</b><span>—</span></span>
+      <span class="diag diag-right" id="diagRenderer" data-state="idle"><svg><use href="#i-gpu"/></svg><span>Renderer…</span></span>
+    </div>
+
+    <main class="workbench">
+      <aside class="panel left-panel" aria-label="Scene and fabric">
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-left="scene">Scene</button>
+          <button class="tab" role="tab" data-left="fabric">Fabric <span id="paramCount" class="tab-count">0</span></button>
+          <button class="tab" role="tab" data-left="sync">Code Sync <span id="syncCount" class="tab-count" hidden>0</span></button>
+          <button class="tab" role="tab" data-left="reviews">Reviews</button>
+        </div>
+
+        <section class="tab-body" data-left-body="scene">
+          <div class="section-head"><span>CAD &amp; scene hierarchy</span><button id="loadDemo" class="link-btn">Load demo part</button></div>
+          <div id="sceneTree" class="tree" role="tree"></div>
+          <div class="section-head"><span>CAD feature tools</span></div>
+          <div class="tool-grid">
+            <button class="tool" data-feature="extrude" title="Grow a box from a body face by a depth parameter"><svg><use href="#i-extrude"/></svg><span>Extrude</span></button>
+            <button class="tool" data-feature="split" title="Cut a body at a parametric fraction"><svg><use href="#i-split"/></svg><span>Split</span></button>
+            <button class="tool" data-feature="boolean" title="Subtract or unite two bodies (applied at mesh level)"><svg><use href="#i-boolean"/></svg><span>Boolean</span></button>
+            <button class="tool" data-feature="flow_volume" title="Extract a fluid domain around all bodies"><svg><use href="#i-flow"/></svg><span>Flow Volume</span></button>
+            <button class="tool" data-feature="scale" title="Uniform scale factor parameter"><svg><use href="#i-scale"/></svg><span>Scaling</span></button>
+            <button class="tool" id="bindTool" title="Drive the selected face's dimension with a parameter"><svg><use href="#i-link"/></svg><span>Bind dim.</span></button>
+            <button class="tool" data-feature="offset_face" title="Push or pull a selected planar face (exact B-Rep)"><svg><use href="#i-extrude"/></svg><span>Push/Pull</span></button>
+            <button class="tool" data-feature="fillet" title="Fillet selected edges (exact B-Rep)"><svg><use href="#i-boolean"/></svg><span>Fillet</span></button>
+            <button class="tool" data-feature="chamfer" title="Chamfer selected edges (exact B-Rep)"><svg><use href="#i-split"/></svg><span>Chamfer</span></button>
+          </div>
+          <div class="section-head"><span>Compliance</span></div>
+          <div class="compliance-card">
+            <p class="hint">Sealed ISO 9001 / AS9100 evidence: provenance, Pint unit verification, impact matrix, CFD/FEA metrics, and an Ed25519 signature that anyone can check with the organization's public key.</p>
+            <div class="btn-row"><button id="exportCompliancePdf" class="tbtn primary"><svg><use href="#i-export"/></svg><span>Export Compliance Audit (PDF)</span></button></div>
+            <div class="btn-row"><button id="exportComplianceHtml" class="tbtn"><svg><use href="#i-export"/></svg><span>Export Compliance Audit (HTML)</span></button></div>
+            <div class="btn-row"><button id="verifyReport" class="tbtn"><svg><use href="#i-check"/></svg><span>Verify a report…</span></button><button id="downloadPublicKey" class="tbtn" title="PEM public key for auditors: paramfabric report-verify --public-key"><svg><use href="#i-export"/></svg><span>Public key</span></button></div>
+            <input id="verifyReportFile" type="file" accept=".pdf,.html,application/pdf,text/html" hidden>
+            <div id="verifyResult" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="tab-body" data-left-body="fabric" hidden>
+          <div class="list-tools">
+            <label class="search"><svg><use href="#i-search"/></svg><input id="paramSearch" placeholder="Filter parameters…" autocomplete="off" aria-label="Filter parameters"></label>
+            <select id="tagFilter" aria-label="Filter by tag"><option value="">All tags</option></select>
+            <button id="newParameter" class="icon-btn" title="New parameter"><svg><use href="#i-plus"/></svg></button>
+            <button id="importFabric" class="icon-btn" title="Import YAML/JSON/CSV/Python/C++/OpenSCAD"><svg><use href="#i-upload"/></svg></button>
+          </div>
+          <div id="paramList" class="param-list" role="listbox" aria-label="Parameters"></div>
+          <div class="section-head"><span>Dependency lineage</span><span id="graphCount" class="muted">0 links</span></div>
+          <div id="lineage" class="lineage"></div>
+        </section>
+
+        <section class="tab-body" data-left-body="sync" hidden>
+          <div class="sync-head">
+            <label class="switch"><input id="liveSync" type="checkbox" checked><span></span>Live sync</label>
+            <div class="sync-actions"><button id="pullAll" class="mini-btn" title="Copy drifted source values into the fabric"><svg><use href="#i-arrow-down"/></svg>Pull</button><button id="pushAll" class="mini-btn" title="Write fabric values into drifted source constants"><svg><use href="#i-arrow-up"/></svg>Push</button></div>
+          </div>
+          <p class="hint">Python, C/C++, Rust and OpenSCAD constants, literals or formulas, whose names match parameters. Once in sync, edits on either side propagate automatically (formulas stay formulas); edits on both sides are held as conflicts.</p>
+          <div id="syncList" class="sync-list"></div>
+          <div id="driftReport" class="sync-list"></div>
+        </section>
+
+        <section class="tab-body" data-left-body="reviews" hidden>
+          <div class="section-head"><span>Change requests</span><button id="refreshQueue" class="link-btn">Refresh</button></div>
+          <div id="requestList" class="request-list"></div>
+        </section>
+      </aside>
+
+      <section class="viewport" aria-label="3D viewport">
+        <canvas id="viewportCanvas"></canvas>
+        <div class="vp-toolbar vp-top-left" role="toolbar" aria-label="View">
+          <button class="vbtn" data-view="fit" title="Fit all (F)"><svg><use href="#i-fit"/></svg></button>
+          <button class="vbtn text" data-view="iso">Iso</button>
+          <button class="vbtn text" data-view="front">Front</button>
+          <button class="vbtn text" data-view="top">Top</button>
+          <button class="vbtn text" data-view="right">Right</button>
+          <span class="vsep"></span>
+          <button class="vbtn text active" data-display="shaded">Shaded</button>
+          <button class="vbtn text" data-display="edges">Edges</button>
+          <button class="vbtn text" data-display="xray">X-ray</button>
+          <span class="vsep"></span>
+          <button class="vbtn text toggle" data-layer="mesh" aria-pressed="false">Mesh</button>
+          <button class="vbtn text toggle" data-layer="streamlines" aria-pressed="true">Streamlines</button>
+          <button class="vbtn text toggle" data-layer="contour" aria-pressed="true">Contour</button>
+        </div>
+        <div class="vp-toolbar vp-tools" role="toolbar" aria-label="Selection and post-processing">
+          <span class="vlabel">Select</span>
+          <button class="vbtn text active" data-pick="auto" title="Pick faces and edges">Auto</button>
+          <button class="vbtn text" data-pick="face" title="Pick faces only (shells, supports, loads)"><svg><use href="#i-face"/></svg>Face</button>
+          <button class="vbtn text" data-pick="edge" title="Pick edges only (beams, fillets)"><svg><use href="#i-ruler"/></svg>Edge</button>
+          <span class="vsep"></span>
+          <button class="vbtn text toggle" id="cutToggle" aria-pressed="false" title="Interactive cutting plane" data-help-id="view.cut_plane"><svg><use href="#i-cut"/></svg>Cut</button>
+          <span id="cutControls" class="cut-controls" hidden>
+            <button class="vbtn text active" data-cut-axis="0">X</button>
+            <button class="vbtn text" data-cut-axis="1">Y</button>
+            <button class="vbtn text" data-cut-axis="2">Z</button>
+            <input id="cutPosition" type="range" min="0" max="1" step="0.002" value="0.5" aria-label="Cutting plane position">
+            <span id="cutReadout" class="vreadout"></span>
+            <button class="vbtn text toggle" id="cutFlip" aria-pressed="false" title="Keep the other side">Flip</button>
+          </span>
+          <button class="vbtn text toggle" id="glyphToggle" aria-pressed="true" title="Velocity vectors on the cut plane and at inlets/outlets"><svg><use href="#i-vectors"/></svg>Vectors</button>
+          <span class="vsep"></span>
+          <button class="vbtn text toggle" id="isoToggle" aria-pressed="false" title="Iso-surface of a result field (marching tetrahedra)" data-help-id="view.iso_surface" disabled>Iso-surface</button>
+          <span id="isoControls" class="cut-controls" hidden>
+            <select id="isoField" aria-label="Iso-surface field"></select>
+            <input id="isoLevel" type="range" min="0" max="1" step="0.005" value="0.5" aria-label="Iso-surface level">
+            <span id="isoReadout" class="vreadout"></span>
+          </span>
+        </div>
+        <div id="selectionHud" class="vp-hud" hidden></div>
+        <div id="viewportEmpty" class="vp-empty">
+          <span class="empty-mark"><svg><use href="#i-cube"/></svg></span>
+          <strong>No geometry in this workspace</strong>
+          <span>Import a STEP, IGES or STL file, or start from the demo cantilever bracket.</span>
+          <div class="empty-actions"><button id="emptyImport" class="tbtn primary"><svg><use href="#i-upload"/></svg><span>Import CAD</span></button><button id="emptyDemo" class="tbtn"><span>Load demo part</span></button></div>
+          <small>Drop a CAD file anywhere on the viewport.</small>
+        </div>
+        <div id="failureCard" class="failure-card" role="alert" hidden>
+          <div class="failure-head"><svg><use href="#i-alert"/></svg><strong id="failureTitle"></strong><button type="button" class="icon-btn" id="failureClose" aria-label="Dismiss"><svg><use href="#i-close"/></svg></button></div>
+          <p id="failureFix"></p>
+          <details id="failureMore"><summary>Technical details</summary><pre id="failureDetails"></pre></details>
+          <div class="btn-row"><button type="button" class="tbtn" id="failureCopy"><span>Copy details</span></button></div>
+        </div>
+        <div id="legend" class="vp-legend" hidden>
+          <div class="legend-title"><span id="legendTitle"></span><select id="legendField" aria-label="Result field"></select></div>
+          <canvas id="legendBar" width="240" height="12"></canvas>
+          <div class="legend-ticks"><span id="legendMin"></span><span id="legendMid"></span><span id="legendMax"></span></div>
+        </div>
+        <div id="morphDock" class="morph-dock" hidden>
+          <div class="dock-head"><span><svg><use href="#i-param"/></svg>Parametric morph</span><span class="dock-right"><span id="morphScope" class="muted"></span><button id="morphCollapse" class="vbtn" aria-expanded="true" aria-controls="morphRows" title="Collapse"><svg><use href="#i-chevron"/></svg></button></span></div>
+          <div id="morphRows" class="morph-rows"></div>
+        </div>
+        <div class="vp-footer"><span id="vpUnits">Units: m</span><span id="vpCoords"></span></div>
+      </section>
+
+      <aside class="panel right-panel" aria-label="Properties and physics">
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-right="inspector">Inspector</button>
+          <button class="tab" role="tab" data-right="physics">Physics</button>
+          <button class="tab" role="tab" data-right="solve">Mesh &amp; Solve</button>
+          <button class="tab" role="tab" data-right="results">Results</button>
+        </div>
+        <section class="tab-body" data-right-body="inspector"><div id="inspector"></div></section>
+        <section class="tab-body" data-right-body="physics" hidden><div id="physicsPanel"></div></section>
+        <section class="tab-body" data-right-body="solve" hidden>
+          <div id="meshPanel"></div>
+          <div class="section-head"><span>Solver</span></div>
+          <div id="solverPanel"></div>
+          <div class="section-head"><span>Residual convergence</span><span id="residualMeta" class="muted"></span></div>
+          <div class="chart-wrap">
+            <canvas id="residualChart" aria-label="Residual convergence plot" role="img"></canvas>
+            <div id="residualTip" class="chart-tip" hidden></div>
+          </div>
+          <div id="residualLegend" class="chart-legend"></div>
+          <details class="log-box"><summary>Solver log</summary><pre id="solverLog"></pre></details>
+        </section>
+        <section class="tab-body" data-right-body="results" hidden><div id="resultsPanel"></div></section>
+        <div id="validation" class="validation">
+          <button id="validationToggle" class="validation-head" aria-expanded="false"><svg><use href="#i-alert"/></svg><span>Validation</span><span id="validationCount" class="tab-count">0</span><svg class="chev"><use href="#i-chevron"/></svg></button>
+          <div id="validationList" class="validation-list" hidden></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <input id="cadInput" type="file" accept=".step,.stp,.iges,.igs,.stl,.x_t,.x_b" hidden>
+  <input id="fabricInput" type="file" accept=".yaml,.yml,.json,.csv,.hpp,.h,.hh,.cpp,.cc,.py,.scad" hidden>
+
+  <dialog id="cadDialog" class="modal">
+    <form method="dialog" id="cadForm">
+      <div class="modal-head"><div><span class="kicker">CAD IMPORT</span><h2 id="cadTitle">Import geometry</h2></div><button type="button" class="icon-btn" data-close="cadDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+      <p id="cadSummary" class="muted"></p>
+      <label class="field">Length unit<select id="cadUnits"><option value="">Detect from file</option><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option><option value="inch">inch</option><option value="ft">ft</option></select><small>STEP and IGES declare their units; STL does not (defaults to mm).</small></label>
+      <label class="check"><input id="cadAssociate" type="checkbox" checked> Create associativity parameters for each body's X/Y/Z extents</label>
+      <div class="modal-actions"><button type="button" class="tbtn" data-close="cadDialog">Cancel</button><button type="submit" id="cadSubmit" class="tbtn primary"><svg><use href="#i-upload"/></svg><span>Import</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog id="paletteDialog" class="palette" aria-label="Search commands">
+    <input id="paletteInput" type="text" placeholder="Search commands: view, mesh, run, export…" autocomplete="off" spellcheck="false" aria-label="Search commands">
+    <div id="paletteList" class="palette-list" role="listbox"></div>
+    <div class="palette-foot"><span>↑↓ choose</span><span>Enter run</span><span>Esc close</span></div>
+  </dialog>
+
+  <dialog id="shortcutsDialog" class="modal wide">
+    <div class="modal-head"><div><span class="kicker">HELP</span><h2>Mouse and keyboard</h2></div><button type="button" class="icon-btn" data-close="shortcutsDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div id="shortcutsBody" class="shortcuts"></div>
+  </dialog>
+
+  <dialog id="nameDialog" class="modal">
+    <form method="dialog" id="nameForm">
+      <div class="modal-head"><div><span class="kicker" id="nameKicker">NAME</span><h2 id="nameTitle">Name</h2><p id="nameHint" class="muted"></p></div><button type="button" class="icon-btn" data-close="nameDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+      <label class="field"><span id="nameLabel">Name</span><input id="nameInput" type="text" maxlength="60" autocomplete="off" spellcheck="false"></label>
+      <p id="nameError" class="field-error" hidden></p>
+      <div class="modal-actions"><button type="button" class="tbtn" data-close="nameDialog">Cancel</button><button type="submit" class="tbtn primary"><svg><use href="#i-check"/></svg><span id="nameSubmit">Save</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog id="memberDialog" class="modal member-modal">
+    <form method="dialog" id="memberForm">
+      <div class="modal-head"><div><span class="kicker" id="memberKicker">STRUCTURAL IDEALIZATION</span><h2 id="memberTitle">Member</h2><p id="memberTarget" class="muted"></p></div><button type="button" class="icon-btn" data-close="memberDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+      <div class="member-body"><div id="memberFields" class="member-fields"></div><div class="member-side"><div id="memberPreview" class="member-preview"></div><table id="memberProps" class="kv-table compact"></table></div></div>
+      <p id="memberError" class="field-error" hidden></p>
+      <div class="modal-actions"><button type="button" class="tbtn" data-close="memberDialog">Cancel</button><button type="submit" id="memberSubmit" class="tbtn primary"><svg><use href="#i-check"/></svg><span>Assign</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog id="featureDialog" class="modal">
+    <form method="dialog" id="featureForm">
+      <div class="modal-head"><div><span class="kicker">PARAMETRIC FEATURE</span><h2 id="featureTitle">Feature</h2></div><button type="button" class="icon-btn" data-close="featureDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+      <p id="featureHelp" class="muted"></p>
+      <div id="featureFields"></div>
+      <div class="modal-actions"><button type="button" class="tbtn" data-close="featureDialog">Cancel</button><button type="submit" class="tbtn primary"><svg><use href="#i-plus"/></svg><span>Create feature</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog id="importDialog" class="modal">
+    <div class="modal-head"><div><span class="kicker">FABRIC IMPORT</span><h2>Review imported values</h2><p id="importSummary" class="muted"></p></div><button type="button" class="icon-btn" data-close="importDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div id="importPreview" class="import-preview"></div>
+    <div class="modal-actions"><button type="button" class="tbtn" data-close="importDialog">Cancel</button><button id="mergeImport" type="button" class="tbtn primary"><svg><use href="#i-check"/></svg><span>Merge selected</span></button></div>
+  </dialog>
+
+  <div id="helpTip" class="help-tip" role="tooltip" hidden></div>
+  <aside id="helpPanel" class="slide-over" aria-label="Engineering reference" hidden>
+    <div class="slide-head"><div><span class="kicker" id="helpKicker"></span><h2 id="helpTitle"></h2></div><button type="button" class="icon-btn" id="helpClose" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div id="helpBody" class="slide-body"></div>
+  </aside>
+  <dialog id="compareDialog" class="modal wide">
+    <div class="modal-head"><div><span class="kicker">SIDE-BY-SIDE</span><h2 id="compareTitle">Compare</h2></div><button type="button" class="icon-btn" data-close="compareDialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div id="compareBody" class="compare-body"></div>
+  </dialog>
+
+  <div id="dropOverlay" class="drop-overlay" hidden><div><svg><use href="#i-upload"/></svg><strong>Drop to import</strong><span>STEP · IGES · STL · or a fabric file</span></div></div>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>

@@ -1,0 +1,778 @@
+{
+  "version": 1,
+  "notation": "Formulas are HTML with Unicode symbols. ν kinematic viscosity, ν_t eddy viscosity, k turbulent kinetic energy, ω specific dissipation, ε dissipation, y⁺ = u_τ y / ν, u_τ = √(τ_w/ρ).",
+  "topics": {
+    "turbulence.k_omega_sst": {
+      "title": "k-ω SST (Menter)",
+      "category": "Turbulence model",
+      "summary": "Two-equation RANS model that uses k-ω near walls and k-ε in the free stream, with a shear-stress limiter that predicts adverse-pressure-gradient separation better than either alone.",
+      "yplus": "y⁺ ≈ 1 resolves the viscous sublayer (best accuracy). OpenFOAM's ω wall function also blends to the log law for 30 < y⁺ < 300; avoid the buffer layer (5 < y⁺ < 30).",
+      "available": "OpenFOAM (default RANS model). The native solver substitutes standard k-ε.",
+      "formulation": [
+        {
+          "label": "Eddy viscosity",
+          "html": "ν<sub>t</sub> = a<sub>1</sub>k / max(a<sub>1</sub>ω, S F<sub>2</sub>), &nbsp; a<sub>1</sub> = 0.31"
+        },
+        {
+          "label": "k equation",
+          "html": "∂k/∂t + U·∇k = P̃<sub>k</sub> − β*kω + ∇·[(ν + σ<sub>k</sub>ν<sub>t</sub>)∇k], &nbsp; P̃<sub>k</sub> = min(P<sub>k</sub>, 10β*kω)"
+        },
+        {
+          "label": "ω equation",
+          "html": "∂ω/∂t + U·∇ω = αS² − βω² + ∇·[(ν + σ<sub>ω</sub>ν<sub>t</sub>)∇ω] + 2(1 − F<sub>1</sub>)σ<sub>ω2</sub>(1/ω)∇k·∇ω"
+        },
+        {
+          "label": "Constants",
+          "html": "β* = 0.09; F<sub>1</sub> blends the k-ω (inner) and k-ε (outer) coefficient sets"
+        }
+      ],
+      "use_cases": [
+        "External aerodynamics with separation (vehicles, brackets, bluff bodies)",
+        "Adverse pressure gradients, diffusers, turbomachinery",
+        "General-purpose default when unsure"
+      ],
+      "pitfalls": [
+        "Stagnation regions still over-produce k slightly; the production limiter keeps it bounded.",
+        "Inlet ω sets the free-stream turbulence decay: a too-small length scale makes inlet turbulence vanish before the body.",
+        "Steady RANS of a bluff body has an unsteady wake: judge convergence on forces, not only residuals."
+      ],
+      "references": [
+        "F. R. Menter, “Two-equation eddy-viscosity turbulence models for engineering applications,” AIAA Journal 32(8):1598–1605, 1994.",
+        "F. R. Menter, M. Kuntz, R. Langtry, “Ten years of industrial experience with the SST turbulence model,” Turbulence, Heat and Mass Transfer 4, 2003.",
+        "D. C. Wilcox, Turbulence Modeling for CFD, 3rd ed., DCW Industries, 2006."
+      ]
+    },
+    "turbulence.k_epsilon": {
+      "title": "Standard k-ε",
+      "category": "Turbulence model",
+      "summary": "Robust two-equation RANS model for fully turbulent flows away from walls, used with wall functions; it tends to under-predict separation under adverse pressure gradients.",
+      "yplus": "Wall functions: 30 < y⁺ < 300. Do not resolve to y⁺ ≈ 1 with the standard model: it has no low-Re damping.",
+      "available": "OpenFOAM (kEpsilon) and the native solver.",
+      "formulation": [
+        {
+          "label": "Eddy viscosity",
+          "html": "ν<sub>t</sub> = C<sub>μ</sub> k² / ε"
+        },
+        {
+          "label": "k equation",
+          "html": "∂k/∂t + U·∇k = P<sub>k</sub> − ε + ∇·[(ν + ν<sub>t</sub>/σ<sub>k</sub>)∇k]"
+        },
+        {
+          "label": "ε equation",
+          "html": "∂ε/∂t + U·∇ε = C<sub>1ε</sub>(ε/k)P<sub>k</sub> − C<sub>2ε</sub>ε²/k + ∇·[(ν + ν<sub>t</sub>/σ<sub>ε</sub>)∇ε]"
+        },
+        {
+          "label": "Constants",
+          "html": "C<sub>μ</sub> = 0.09, C<sub>1ε</sub> = 1.44, C<sub>2ε</sub> = 1.92, σ<sub>k</sub> = 1.0, σ<sub>ε</sub> = 1.3"
+        }
+      ],
+      "use_cases": [
+        "Internal ducts and pipes, mixing, free shear layers",
+        "Quick industrial estimates with coarse near-wall meshes"
+      ],
+      "pitfalls": [
+        "Delays or misses separation under adverse pressure gradients.",
+        "Stagnation-point anomaly: excessive k on the front of bluff bodies.",
+        "Cells in the viscous sublayer (y⁺ < 11) make standard wall functions inaccurate."
+      ],
+      "references": [
+        "B. E. Launder, D. B. Spalding, “The numerical computation of turbulent flows,” Computer Methods in Applied Mechanics and Engineering 3(2):269–289, 1974.",
+        "S. B. Pope, Turbulent Flows, Cambridge University Press, 2000, ch. 10."
+      ]
+    },
+    "turbulence.spalart_allmaras": {
+      "title": "Spalart–Allmaras",
+      "category": "Turbulence model",
+      "summary": "One-equation RANS model for a modified eddy viscosity ν̃, calibrated for aerodynamic boundary layers; cheap and robust for attached wall-bounded flows.",
+      "yplus": "Designed for y⁺ ≈ 1. Paramfabric pairs it with Spalding's wall law (nutUSpaldingWallFunction), which tolerates y⁺ up to ~100.",
+      "available": "OpenFOAM only.",
+      "formulation": [
+        {
+          "label": "Eddy viscosity",
+          "html": "ν<sub>t</sub> = ν̃ f<sub>v1</sub>, &nbsp; f<sub>v1</sub> = χ³/(χ³ + c<sub>v1</sub>³), &nbsp; χ = ν̃/ν, &nbsp; c<sub>v1</sub> = 7.1"
+        },
+        {
+          "label": "ν̃ equation",
+          "html": "Dν̃/Dt = c<sub>b1</sub>S̃ν̃ − c<sub>w1</sub>f<sub>w</sub>(ν̃/d)² + (1/σ)[∇·((ν + ν̃)∇ν̃) + c<sub>b2</sub>|∇ν̃|²]"
+        },
+        {
+          "label": "Inlet",
+          "html": "ν̃ = 3ν to 5ν for a fully turbulent inflow (Paramfabric uses 3ν)"
+        }
+      ],
+      "use_cases": [
+        "Wings, airfoils, fuselages: attached or mildly separated aerodynamic flows",
+        "Large meshes where one transport equation saves cost"
+      ],
+      "pitfalls": [
+        "Poor for free shear flows (jets, wakes far downstream) and massive separation.",
+        "No k field: turbulence intensity cannot be post-processed.",
+        "Needs wall distance d everywhere; very thin gaps can distort it."
+      ],
+      "references": [
+        "P. R. Spalart, S. R. Allmaras, “A one-equation turbulence model for aerodynamic flows,” AIAA Paper 92-0439, 1992; La Recherche Aérospatiale 1:5–21, 1994."
+      ]
+    },
+    "turbulence.laminar": {
+      "title": "Laminar (no turbulence model)",
+      "category": "Turbulence model",
+      "summary": "Solves the steady incompressible Navier–Stokes equations directly, which is valid only below transition (pipe Re_D < 2300, flat plate Re_x < 5×10⁵).",
+      "yplus": "Not applicable: resolve the boundary layer with at least ~10 cells across its thickness δ ≈ 5x/√Re_x.",
+      "available": "OpenFOAM and the native solver. Automatic mode selects it below Re = 2000.",
+      "formulation": [
+        {
+          "label": "Momentum",
+          "html": "(U·∇)U = −∇p/ρ + ν∇²U"
+        },
+        {
+          "label": "Continuity",
+          "html": "∇·U = 0"
+        }
+      ],
+      "use_cases": [
+        "Microfluidics, slow viscous flows, low-speed internal flows",
+        "Verification against analytic solutions (Poiseuille, Couette)"
+      ],
+      "pitfalls": [
+        "At high Re a steady laminar solution of a separated flow does not exist; SIMPLE will oscillate or diverge.",
+        "Transitional flows are neither laminar nor fully turbulent; both choices carry model error."
+      ],
+      "references": [
+        "F. M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006."
+      ]
+    },
+    "mesh.tetrahedral": {
+      "title": "Tetrahedral mesh",
+      "category": "Mesh type",
+      "summary": "Fully automatic body-fitted mesh for any CAD shape; use quadratic Tet10 for structures and prism inflation layers for CFD walls.",
+      "yplus": "Tetrahedra alone resolve near-wall gradients poorly. Add prism inflation layers sized for the turbulence model's y⁺ target.",
+      "formulation": [
+        {
+          "label": "Quality (radius ratio)",
+          "html": "q = 3 r<sub>in</sub>/R<sub>circ</sub> ∈ (0, 1], equilateral = 1; Paramfabric grades meshes on min and mean q"
+        },
+        {
+          "label": "Linear tet strain",
+          "html": "Tet4 has constant strain per element: bending needs many elements, while Tet10 (quadratic) captures linear strain"
+        }
+      ],
+      "use_cases": [
+        "Complex or imported geometry",
+        "Structural FEA with Tet10",
+        "CFD with prism layers when hex meshing is impractical"
+      ],
+      "pitfalls": [
+        "Linear Tet4 is overly stiff in bending (locking): use the quadratic order for FEA.",
+        "In CFD tets add numerical diffusion and non-orthogonality: expect ~10–16% pressure-drop error at ~7 cells per hydraulic diameter (Paramfabric duct validation).",
+        "Needs 5–6× more cells than hexahedra for the same resolution."
+      ],
+      "references": [
+        "J. R. Shewchuk, “What is a good linear finite element?”, 11th International Meshing Roundtable, 2002.",
+        "S. E. Benzley et al., “A comparison of all-hexagonal and all-tetrahedral finite element meshes for elastic and elasto-plastic analysis,” 4th International Meshing Roundtable, 1995."
+      ]
+    },
+    "mesh.hexahedral": {
+      "title": "Hexahedral mesh",
+      "category": "Mesh type",
+      "summary": "Fewer, better-aligned cells for the same accuracy. Paramfabric produces all-hex meshes by subdividing each tetrahedron into four hexahedra.",
+      "yplus": "Aligned hex layers fit boundary layers naturally; subdivision hexes are not wall-aligned, so CFD in Paramfabric always uses tets + prisms.",
+      "formulation": [
+        {
+          "label": "Subdivision",
+          "html": "1 tet → 4 hexes (gmsh SubdivisionAlgorithm 2): all-hex, but with skewed cells near tet corners"
+        },
+        {
+          "label": "Hex20",
+          "html": "Serendipity quadratic hexahedron: accurate bending with 1–2 elements through the thickness"
+        }
+      ],
+      "use_cases": [
+        "Structural FEA where Hex20 accuracy per DOF matters",
+        "Prismatic and swept parts"
+      ],
+      "pitfalls": [
+        "Subdivided hexes have lower shape quality than swept or multiblock hexes.",
+        "Hex8 (linear) shows shear locking in bending: prefer Hex20.",
+        "Not available for CFD in Paramfabric."
+      ],
+      "references": [
+        "S. E. Benzley et al., “A comparison of all-hexagonal and all-tetrahedral finite element meshes for elastic and elasto-plastic analysis,” 4th International Meshing Roundtable, 1995.",
+        "C. Geuzaine, J.-F. Remacle, “Gmsh: a 3-D finite element mesh generator,” IJNME 79(11):1309–1331, 2009."
+      ]
+    },
+    "engine.lbm": {
+      "title": "Lattice Boltzmann method (LBM)",
+      "category": "Solver engine",
+      "summary": "Solves a discrete Boltzmann equation on a Cartesian lattice with explicit collide-and-stream steps; very fast on GPUs for transient flows, but not natively a steady-RANS method.",
+      "yplus": "Wall-resolved LBM at high Re needs enormous cell counts; practical LBM codes use LES with wall models (y⁺ of 30–100 or more).",
+      "available": "Not available in Paramfabric. Listed for comparison only.",
+      "formulation": [
+        {
+          "label": "Lattice BGK",
+          "html": "f<sub>i</sub>(x + c<sub>i</sub>Δt, t + Δt) = f<sub>i</sub>(x, t) − (1/τ)[f<sub>i</sub> − f<sub>i</sub><sup>eq</sup>]"
+        },
+        {
+          "label": "Viscosity",
+          "html": "ν = c<sub>s</sub>²(τ − ½)Δt, &nbsp; c<sub>s</sub> = Δx/(√3 Δt)"
+        },
+        {
+          "label": "Velocity sets",
+          "html": "D3Q19 / D3Q27; weakly compressible, Ma ≲ 0.1–0.3"
+        }
+      ],
+      "use_cases": [
+        "Transient aerodynamics and aeroacoustics",
+        "Very complex geometry without meshing (voxelized)",
+        "Pedestrian wind comfort, urban flows"
+      ],
+      "pitfalls": [
+        "Staircase walls unless interpolated boundary conditions are used.",
+        "Steady-state answers require long transient averaging.",
+        "Compressibility error grows with lattice Mach number."
+      ],
+      "references": [
+        "T. Krüger et al., The Lattice Boltzmann Method: Principles and Practice, Springer, 2017.",
+        "S. Chen, G. D. Doolen, “Lattice Boltzmann method for fluid flows,” Annual Review of Fluid Mechanics 30:329–364, 1998."
+      ]
+    },
+    "engine.fvm_navier_stokes": {
+      "title": "Finite-volume Navier–Stokes (FVM)",
+      "category": "Solver engine",
+      "summary": "Integrates conservation laws over body-fitted control volumes with implicit pressure–velocity coupling (SIMPLE); the industry standard for steady RANS. Paramfabric runs it with OpenFOAM simpleFoam.",
+      "yplus": "Set by the turbulence model: ≈1 for SST/SA resolved, 30–300 with wall functions.",
+      "available": "OpenFOAM simpleFoam (production) and the native experimental solver.",
+      "formulation": [
+        {
+          "label": "Conservation",
+          "html": "∮<sub>∂V</sub> (UU − ν<sub>eff</sub>∇U)·dS = −∮<sub>∂V</sub> p dS, &nbsp; ∮<sub>∂V</sub> U·dS = 0"
+        },
+        {
+          "label": "SIMPLE(C)",
+          "html": "predict U* from momentum → solve ∇·(1/a<sub>P</sub>∇p′) = ∇·U* → correct p, U; under-relax α<sub>U</sub>, α<sub>p</sub>"
+        }
+      ],
+      "use_cases": [
+        "Steady RANS for drag, lift, and pressure drop",
+        "Body-fitted meshes with boundary-layer prisms",
+        "Internal and external incompressible flow"
+      ],
+      "pitfalls": [
+        "Mesh non-orthogonality and skewness degrade accuracy; check checkMesh output.",
+        "Residuals can plateau for physically unsteady flows; monitor integrated forces."
+      ],
+      "references": [
+        "S. V. Patankar, Numerical Heat Transfer and Fluid Flow, Hemisphere, 1980.",
+        "J. H. Ferziger, M. Perić, Computational Methods for Fluid Dynamics, 3rd ed., Springer, 2002.",
+        "H. G. Weller et al., “A tensorial approach to computational continuum mechanics using object-oriented techniques,” Computers in Physics 12(6):620–631, 1998."
+      ]
+    },
+    "bc.velocity_inlet": {
+      "title": "Velocity inlet",
+      "category": "Boundary condition",
+      "summary": "Prescribes the incoming velocity (Dirichlet) with zero-gradient pressure; turbulence enters as intensity and length scale.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Velocity",
+          "html": "U = U<sub>in</sub> (external box), or |U| normal to the face (internal inlet)"
+        },
+        {
+          "label": "Turbulence",
+          "html": "k = 3/2 (I U)², &nbsp; ω = √k / (C<sub>μ</sub><sup>1/4</sup> ℓ), &nbsp; ε = C<sub>μ</sub><sup>3/4</sup> k<sup>3/2</sup>/ℓ"
+        }
+      ],
+      "use_cases": [
+        "Wind-tunnel inflow for external flow",
+        "Duct and pipe inlets with known flow rate"
+      ],
+      "pitfalls": [
+        "Too close to the body (less than 3–5 lengths upstream) distorts the approach flow.",
+        "Do not also prescribe velocity at the outlet: the problem becomes over-constrained."
+      ],
+      "references": [
+        "H. K. Versteeg, W. Malalasekera, An Introduction to Computational Fluid Dynamics, 2nd ed., Pearson, 2007, ch. 9."
+      ]
+    },
+    "bc.pressure_outlet": {
+      "title": "Pressure outlet",
+      "category": "Boundary condition",
+      "summary": "Fixes the static (gauge) pressure and lets velocity leave freely; backflow is blocked (inletOutlet).",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Pressure",
+          "html": "p = 0 (gauge; OpenFOAM's p is kinematic, p/ρ)"
+        },
+        {
+          "label": "Velocity",
+          "html": "∂U/∂n = 0 for outflow; U = 0 for inflow (inletOutlet)"
+        }
+      ],
+      "use_cases": [
+        "Exit of external domains and ducts"
+      ],
+      "pitfalls": [
+        "An outlet cutting through a recirculation zone causes backflow and unstable convergence: place it 5–10 body lengths downstream.",
+        "Gauge pressure only: add the ambient pressure for absolute values."
+      ],
+      "references": [
+        "H. K. Versteeg, W. Malalasekera, An Introduction to Computational Fluid Dynamics, 2nd ed., Pearson, 2007, ch. 9."
+      ]
+    },
+    "bc.no_slip_wall": {
+      "title": "No-slip wall",
+      "category": "Boundary condition",
+      "summary": "Fluid velocity equals the wall velocity (zero here); turbulence walls use the model's wall treatment.",
+      "yplus": "Choose the first-cell height for the model: y⁺ ≈ 1 (SST, SA resolved) or 30–300 (wall functions). The inflation-layer tool computes it from a target y⁺.",
+      "formulation": [
+        {
+          "label": "Velocity",
+          "html": "U = 0"
+        },
+        {
+          "label": "First cell",
+          "html": "y<sub>1</sub> = y⁺ν/u<sub>τ</sub>, &nbsp; u<sub>τ</sub> = U√(C<sub>f</sub>/2), &nbsp; C<sub>f</sub> ≈ 0.058 Re<sup>−0.2</sup> (turbulent) or 1.328/√Re (laminar)"
+        },
+        {
+          "label": "Wall functions",
+          "html": "kqRWallFunction, omegaWallFunction / epsilonWallFunction, nutkWallFunction (SA: nutUSpaldingWallFunction)"
+        }
+      ],
+      "use_cases": [
+        "Every solid surface in contact with the fluid"
+      ],
+      "pitfalls": [
+        "A first cell in the buffer layer (5 < y⁺ < 30) degrades wall shear and drag for all models."
+      ],
+      "references": [
+        "D. B. Spalding, “A single formula for the law of the wall,” Journal of Applied Mechanics 28(3):455–458, 1961."
+      ]
+    },
+    "bc.symmetry": {
+      "title": "Symmetry / slip",
+      "category": "Boundary condition",
+      "summary": "Zero normal velocity and zero normal gradients: a frictionless plane. Paramfabric applies it to the far-field sides of the flow box.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Velocity",
+          "html": "U·n = 0, &nbsp; ∂(U − (U·n)n)/∂n = 0"
+        },
+        {
+          "label": "Scalars",
+          "html": "∂φ/∂n = 0"
+        }
+      ],
+      "use_cases": [
+        "Far-field sides of external domains",
+        "Half models of symmetric geometry and symmetric flow"
+      ],
+      "pitfalls": [
+        "Only valid if the flow really is symmetric: wakes that shed alternately are not.",
+        "Keep blockage (body frontal area / box cross-section) below about 5% or the sides accelerate the flow."
+      ],
+      "references": [
+        "J. H. Ferziger, M. Perić, Computational Methods for Fluid Dynamics, 3rd ed., Springer, 2002, §8.10."
+      ]
+    },
+    "mesh.inflation": {
+      "title": "Prism inflation layers",
+      "category": "Meshing",
+      "summary": "Thin prism layers grown from the walls resolve the boundary layer with high-aspect-ratio cells aligned with the wall.",
+      "yplus": "The first height comes from the target y⁺ (flat-plate skin friction estimate). Check the y⁺ reported after the solve and adjust.",
+      "formulation": [
+        {
+          "label": "Layer heights",
+          "html": "h<sub>i</sub> = h<sub>1</sub> g<sup>i−1</sup>, &nbsp; total = h<sub>1</sub>(gⁿ − 1)/(g − 1)"
+        },
+        {
+          "label": "First height",
+          "html": "h<sub>1</sub> = y⁺ν/u<sub>τ</sub>, capped so the stack stays below 20% of the local cell size"
+        }
+      ],
+      "use_cases": [
+        "Every turbulent CFD case with drag, lift, or heat transfer at walls"
+      ],
+      "pitfalls": [
+        "Growth ratios above ~1.3 produce a jump to the tetrahedra above the stack.",
+        "Very sharp concave corners can make extrusion fail; Paramfabric then meshes without layers and logs it."
+      ],
+      "references": [
+        "C. Geuzaine, J.-F. Remacle, “Gmsh: a 3-D finite element mesh generator,” IJNME 79(11):1309–1331, 2009."
+      ]
+    },
+    "solver.relaxation": {
+      "title": "Under-relaxation factors α_U, α_p",
+      "category": "Solver control",
+      "summary": "Fractions of each SIMPLE update that are kept; lower values stabilize difficult cases at the cost of more iterations.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Update",
+          "html": "φ<sup>new</sup> = φ<sup>old</sup> + α(φ* − φ<sup>old</sup>)"
+        },
+        {
+          "label": "Defaults",
+          "html": "SIMPLEC (consistent): α<sub>U</sub> = 0.9, α<sub>turb</sub> = 0.7, no pressure relaxation. Classic SIMPLE: α<sub>U</sub> + α<sub>p</sub> ≈ 1 (e.g. 0.7 / 0.3)."
+        }
+      ],
+      "use_cases": [
+        "Diverging or oscillating runs: lower α_U to 0.5–0.7 and set α_p = 0.3"
+      ],
+      "pitfalls": [
+        "Relaxation changes the path, not the converged answer; very low values only slow convergence."
+      ],
+      "references": [
+        "S. V. Patankar, Numerical Heat Transfer and Fluid Flow, Hemisphere, 1980, §6.7."
+      ]
+    },
+    "solver.tolerance": {
+      "title": "Convergence and matrix tolerances",
+      "category": "Solver control",
+      "summary": "The residual target ends the run; linear-solver tolerances control how accurately each inner matrix system is solved.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Residual control",
+          "html": "stop when every initial residual < target (default 10⁻⁵), or when Cd is steady within ±0.5% over the last 20% of iterations"
+        },
+        {
+          "label": "Linear solvers",
+          "html": "GAMG for p (tolerance 10⁻⁷, relTol 0.05), smoothSolver for U and turbulence (10⁻⁸, relTol 0.1)"
+        }
+      ],
+      "use_cases": [
+        "Tighten for accurate integrated forces; loosen for quick trend studies"
+      ],
+      "pitfalls": [
+        "Residual targets below the plateau of a physically unsteady flow are never reached."
+      ],
+      "references": [
+        "OpenFOAM v2506 User Guide, “Solution and algorithm control.”"
+      ]
+    },
+    "structural.beam": {
+      "title": "1D beam (frame) element",
+      "category": "Structural idealization",
+      "summary": "Models a slender member by its axis line and cross-section (A, Iy, Iz, J): six DOF per node, exact for end-loaded Euler–Bernoulli beams.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Bending",
+          "html": "EI w′′′′ = q, &nbsp; tip deflection PL³/(3EI) for a cantilever"
+        },
+        {
+          "label": "Stress",
+          "html": "σ = |N|/A + |M<sub>y</sub>|c<sub>z</sub>/I<sub>y</sub> + |M<sub>z</sub>|c<sub>y</sub>/I<sub>z</sub>"
+        },
+        {
+          "label": "I-section",
+          "html": "I<sub>y</sub> = [b h³ − (b − t<sub>w</sub>)(h − 2t<sub>f</sub>)³]/12"
+        }
+      ],
+      "use_cases": [
+        "Frames, trusses, stiffeners, shafts: length ≫ section depth (L/h > 10)"
+      ],
+      "pitfalls": [
+        "Shear deformation is neglected (short, deep beams are too stiff).",
+        "No local buckling or stress concentrations at joints."
+      ],
+      "references": [
+        "W. Weaver, J. M. Gere, Matrix Analysis of Framed Structures, 3rd ed., Van Nostrand Reinhold, 1990."
+      ]
+    },
+    "structural.shell": {
+      "title": "2D shell element",
+      "category": "Structural idealization",
+      "summary": "Models thin walls by their surface and thickness: CST membrane plus DKT plate bending per flat triangle, optionally with the mid-surface offset from the selected face.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Plate rigidity",
+          "html": "D = E t³ / [12(1 − ν²)]"
+        },
+        {
+          "label": "Offset",
+          "html": "u<sub>mid</sub> = u + θ × (e n): a rigid link to the face, so offset shells and beams act compositely"
+        },
+        {
+          "label": "Check",
+          "html": "simply supported square plate: w<sub>max</sub> = 0.00406 q a⁴/D (Paramfabric: −0.1% at 24×24)"
+        }
+      ],
+      "use_cases": [
+        "Sheet metal, panels, thin-walled housings: thickness ≪ span (t/L < 1/20)"
+      ],
+      "pitfalls": [
+        "Kirchhoff theory: thick plates (t/L > 1/10) are too stiff.",
+        "Flat facets approximate curvature: refine curved faces."
+      ],
+      "references": [
+        "J.-L. Batoz, K.-J. Bathe, L.-W. Ho, “A study of three-node triangular plate bending elements,” IJNME 15(12):1771–1812, 1980."
+      ]
+    },
+    "view.cut_plane": {
+      "title": "Cutting plane",
+      "category": "Post-processing",
+      "summary": "Slices the volume mesh in the browser to show interior cells, contours, and velocity vectors on any X, Y, or Z plane.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Section",
+          "html": "marching tetrahedra: field values interpolated linearly along cut edges, φ = φ<sub>a</sub> + (φ<sub>b</sub> − φ<sub>a</sub>) d<sub>a</sub>/(d<sub>a</sub> − d<sub>b</sub>)"
+        }
+      ],
+      "use_cases": [
+        "Inspect wakes, recirculation, interior stress"
+      ],
+      "pitfalls": [
+        "Shown on the undeformed mesh for FEA; meshes above 600k tetrahedra are not sent to the browser (use the VTK file)."
+      ],
+      "references": []
+    },
+    "view.iso_surface": {
+      "title": "Iso-surface",
+      "category": "Post-processing",
+      "summary": "Extracts the surface where a volume field equals a chosen level (e.g. T = 310 K or |U| = 0.5 m/s) in the browser and colors it by the legend field. Inlet-seeded streamlines are traced in the browser too when the solver did not provide any.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Iso-surface",
+          "html": "marching tetrahedra on d = φ − φ<sub>iso</sub>: one triangle per 1|3 sign split, a quad (a,c)(a,d)(b,d)(b,c) per 2|2 split"
+        },
+        {
+          "label": "Streamlines",
+          "html": "midpoint RK2, x<sub>n+1</sub> = x<sub>n</sub> + Δt·U(x<sub>n</sub> + ½Δt·U(x<sub>n</sub>)), Δt = Δs/|U|, U interpolated barycentrically per tetrahedron"
+        }
+      ],
+      "use_cases": [
+        "Thermal plumes and hot spots in CHT",
+        "Low-speed recirculation pockets (|U| iso)",
+        "Pressure lobes around bluff bodies"
+      ],
+      "pitfalls": [
+        "Piecewise-linear: the surface is only as smooth as the mesh.",
+        "Streamlines stop at walls, zero-velocity points and the domain edge; particle animation shows transit time, not a transient solution."
+      ],
+      "references": [
+        "A. Doi, A. Koide, “An efficient method of triangulating equi-valued surfaces by using tetrahedral cells,” IEICE Trans. E74(1):214–224, 1991."
+      ]
+    },
+    "structural.modal": {
+      "title": "Modal analysis",
+      "category": "Structural",
+      "summary": "Natural frequencies f_n and mode shapes of the supported structure (solid, or the assigned beams and shells). Loads are ignored; only supports, stiffness and mass matter.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Eigenproblem",
+          "html": "K φ = ω² M φ, f = ω / 2π; consistent mass M = ∫ ρ Nᵀ N dV"
+        },
+        {
+          "label": "Solver",
+          "html": "shift-invert Lanczos (ARPACK) with a small negative shift σ so rigid-body modes of an under-supported model stay solvable"
+        },
+        {
+          "label": "Effective mass",
+          "html": "m<sub>eff,i</sub> = (φ<sub>i</sub>ᵀ M r)² / (φ<sub>i</sub>ᵀ M φ<sub>i</sub>), reported as a fraction of the total mass along x, y, z"
+        }
+      ],
+      "use_cases": [
+        "Check resonance against excitation (motors, fans, road input)",
+        "Seismic/shock mode selection: include modes until Σ m_eff ≥ 90 %"
+      ],
+      "pitfalls": [
+        "Mode shapes are normalized (unit max |φ|): their amplitude has no physical meaning.",
+        "Unsupported models have zero-frequency rigid-body modes.",
+        "Tet4 meshes are too stiff: frequencies converge from above, so use second order."
+      ],
+      "references": [
+        "K.-J. Bathe, Finite Element Procedures, 2nd ed., ch. 10–11, 2014.",
+        "R. D. Blevins, Formulas for Natural Frequency and Mode Shape, 1979."
+      ]
+    },
+    "physics.cht": {
+      "title": "Conjugate heat transfer",
+      "category": "Physics",
+      "summary": "Couples conduction in the solid bodies with convection in the coolant around them (OpenFOAM chtMultiRegionSimpleFoam). A heater face injects a total power; the coolant carries it out of the outlet.",
+      "yplus": null,
+      "formulation": [
+        {
+          "label": "Solid",
+          "html": "∇·(κ<sub>s</sub> ∇T) = 0 (heSolidThermo, constant κ)"
+        },
+        {
+          "label": "Fluid",
+          "html": "steady laminar Navier–Stokes + energy in enthalpy h, constant ρ (heRhoThermo, rhoConst)"
+        },
+        {
+          "label": "Interface",
+          "html": "compressible::turbulentTemperatureCoupledBaffleMixed: T<sub>f</sub> = T<sub>s</sub>, κ<sub>f</sub> ∂T<sub>f</sub>/∂n = κ<sub>s</sub> ∂T<sub>s</sub>/∂n on conforming mappedWall patches"
+        },
+        {
+          "label": "Check",
+          "html": "energy balance ṁ c<sub>p</sub> (T̄<sub>out</sub> − T<sub>in</sub>) = Q, thermal resistance R = (T<sub>s,max</sub> − T<sub>in</sub>) / Q"
+        }
+      ],
+      "use_cases": [
+        "Cold plates, heat sinks, liquid-cooled housings"
+      ],
+      "pitfalls": [
+        "Laminar only: check Re = U D / ν < ~2000 in the channel.",
+        "The peak solid temperature is mesh-sensitive at coarse sizes; refine at the interface until it stops changing.",
+        "The energy-balance check is the convergence criterion: residuals alone are not enough."
+      ],
+      "references": [
+        "OpenFOAM v2506 tutorials: heatTransfer/chtMultiRegionSimpleFoam.",
+        "F. P. Incropera et al., Fundamentals of Heat and Mass Transfer, 7th ed., 2011."
+      ]
+    }
+  },
+  "comparisons": {
+    "mesh_type": {
+      "title": "Mesh type: tetrahedral vs hexahedral",
+      "options": [
+        "mesh.tetrahedral",
+        "mesh.hexahedral"
+      ],
+      "rows": {
+        "Generation time": [
+          "Seconds, fully automatic for any B-Rep",
+          "Fast in Paramfabric (tet subdivision); swept or multiblock hex is manual and slow"
+        ],
+        "Accuracy": [
+          "Tet10: excellent for FEA. Tet4 locks in bending. CFD: more diffusion (+10–16% dp at 7 cells/D_h)",
+          "Hex20: best accuracy per DOF. Subdivision hexes are less regular than swept hexes"
+        ],
+        "Cell count": [
+          "5–6× more cells for the same resolution",
+          "Lowest for a given accuracy"
+        ],
+        "Boundary-layer fit": [
+          "Needs prism inflation layers",
+          "Wall-aligned layers when swept; subdivision hexes are not aligned"
+        ],
+        "Computational cost": [
+          "Higher per accuracy level",
+          "Lower per accuracy level"
+        ],
+        "Pros": [
+          "Any geometry, robust, local refinement",
+          "Accuracy, fewer cells, good gradients"
+        ],
+        "Cons": [
+          "Cell count, CFD diffusion",
+          "Hard to generate for complex parts"
+        ],
+        "Recommended use": [
+          "CFD (with prisms), FEA with Tet10, complex imports",
+          "FEA of blocky or swept parts with Hex20"
+        ]
+      }
+    },
+    "solver_engine": {
+      "title": "Solver engine: LBM vs FVM",
+      "options": [
+        "engine.lbm",
+        "engine.fvm_navier_stokes"
+      ],
+      "rows": {
+        "Method": [
+          "Discrete Boltzmann, explicit collide/stream",
+          "Conservation over control volumes, implicit SIMPLE"
+        ],
+        "Mesh": [
+          "Cartesian voxels / octree, immersed walls",
+          "Body-fitted unstructured with prism layers"
+        ],
+        "Steady RANS": [
+          "Not natural: transient, usually LES",
+          "Native (simpleFoam)"
+        ],
+        "Accuracy": [
+          "High for transient, resolved flows; wall treatment limits high-Re accuracy",
+          "High for steady attached and separated RANS with good near-wall meshes"
+        ],
+        "Computational cost": [
+          "Very fast per cell on GPUs, needs many cells and time steps",
+          "Fewer cells, more work per cell, converges to steady state"
+        ],
+        "Pros": [
+          "No meshing, transient physics, GPU scaling",
+          "Mature RANS, wall resolution, steady answers"
+        ],
+        "Cons": [
+          "Weak compressibility, staircase walls, averaging time",
+          "Meshing effort, mesh-quality sensitivity"
+        ],
+        "Recommended use": [
+          "Transient aero/aeroacoustics, urban wind",
+          "Engineering drag, lift, pressure drop"
+        ],
+        "In Paramfabric": [
+          "Not available",
+          "OpenFOAM simpleFoam (production), native solver (experimental)"
+        ]
+      }
+    },
+    "turbulence": {
+      "title": "Turbulence models",
+      "options": [
+        "turbulence.k_omega_sst",
+        "turbulence.k_epsilon",
+        "turbulence.spalart_allmaras",
+        "turbulence.laminar"
+      ],
+      "rows": {
+        "Equations": [
+          "2 (k, ω)",
+          "2 (k, ε)",
+          "1 (ν̃)",
+          "0"
+        ],
+        "Target y⁺": [
+          "≈ 1, or 30–300 with blending",
+          "30–300 (wall functions)",
+          "≈ 1 (Spalding: up to ~100)",
+          "n/a (resolve δ)"
+        ],
+        "Separation": [
+          "Good",
+          "Under-predicted",
+          "Fair (mild)",
+          "Physical only at low Re"
+        ],
+        "Accuracy": [
+          "Best general RANS accuracy for wall-bounded and separating flows",
+          "Good for internal and free shear flows; weak under adverse pressure gradients",
+          "Very good for attached aerodynamic boundary layers",
+          "Exact physics below transition, invalid above"
+        ],
+        "Computational cost": [
+          "Medium",
+          "Medium",
+          "Low",
+          "Lowest"
+        ],
+        "Pros": [
+          "General purpose, APG",
+          "Robust, cheap near walls",
+          "Robust, aerodynamics",
+          "No model error below transition"
+        ],
+        "Cons": [
+          "Stagnation k, ω inlet decay",
+          "APG, stagnation anomaly",
+          "Free shear, no k",
+          "Invalid above transition"
+        ],
+        "Recommended use": [
+          "Default for external aero",
+          "Internal industrial flows",
+          "Wings, attached BLs",
+          "Re < 2000 (pipes)"
+        ]
+      }
+    }
+  }
+}
